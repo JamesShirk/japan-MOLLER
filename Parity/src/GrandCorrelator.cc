@@ -33,6 +33,10 @@ GrandCorrelator::GrandCorrelator(const TString& name)
   fAlphaOutputFileSuff("new.slope.root"),
   fAlphaOutputPath("."),
   fAlphaOutputFile(0),
+  fGrandOutputFileBase("grandR"),
+  fGrandOutputFileSuff("new.slope.root"),
+  fGrandOutputPath("."),
+  fGrandOutputFile(0),
   fTree(0),
   fAliasOutputFileBase("regalias_"),
   fAliasOutputFileSuff(""),
@@ -55,7 +59,8 @@ GrandCorrelator::GrandCorrelator(const TString& name)
 GrandCorrelator::~GrandCorrelator()
 {
   // Close alpha and alias file
-  CloseAlphaFile();
+  CloseFile(fAlphaOutputFile);
+  CloseFile(fGrandOutputFile);
   CloseAliasFile();
 }
 
@@ -76,6 +81,9 @@ void GrandCorrelator::ParseConfigFile(QwParameterFile& file)
   file.PopValue("slope-file-base", fAlphaOutputFileBase);
   file.PopValue("slope-file-suff", fAlphaOutputFileSuff);
   file.PopValue("slope-path", fAlphaOutputPath);
+  file.PopValue("grand-file-base", fGrandOutputFileBase);
+  file.PopValue("grand-file-suff", fGrandOutputFileSuff);
+  file.PopValue("grand-path", fGrandOutputPath);
   file.PopValue("alias-file-base", fAliasOutputFileBase);
   file.PopValue("alias-file-suff", fAliasOutputFileSuff);
   file.PopValue("alias-path", fAliasOutputPath);
@@ -228,7 +236,7 @@ void GrandCorrelator::CalcCorrelations()
 
     this->solve();
 
-    if (kTRUE || fPrintCorrelations) {
+    if (fPrintCorrelations) {
       this->printSummaryAlphas();
       this->printSummaryMeansWithUnc();
       this->printSummaryMeansWithUncCorrected();
@@ -413,8 +421,9 @@ void GrandCorrelator::ConstructTreeBranches(
     return;
   }
 
-  // Create alpha and alias files before trying to create the tree
-  OpenAlphaFile(treeprefix);
+  // Create alpha, grand, and alias files before trying to create the tree
+  OpenFile(fAlphaOutputFile, treeprefix, fAlphaOutputFileBase, fAlphaOutputFileSuff, fAlphaOutputPath, "correlation coefficients");
+  OpenFile(fGrandOutputFile, treeprefix, fGrandOutputFileBase, fGrandOutputFileSuff, fGrandOutputPath, "grand matrix output");
   OpenAliasFile(treeprefix);
 
   // Construct tree name and create new tree
@@ -661,17 +670,42 @@ void GrandCorrelator::WriteAlphaFile()
   this->Ayx.Write("A_yx");
 }
 
-void GrandCorrelator::OpenAlphaFile(const std::string& prefix)
+// void GrandCorrelator::OpenAlphaFile(const std::string& prefix)
+// {
+//   // Create old-style blueR ROOT file
+//   std::string name = prefix + fAlphaOutputFileBase + run_label.Data() + fAlphaOutputFileSuff;
+//   std::string path = fAlphaOutputPath + "/";
+//   std::string file = path + name;
+//   fAlphaOutputFile = new TFile(TString(file), "RECREATE", "correlation coefficients");
+//   if (! fAlphaOutputFile->IsWritable()) {
+//     QwError << "GrandCorrelator could not create output file " << file << QwLog::endl;
+//     delete fAlphaOutputFile;
+//     fAlphaOutputFile = 0;
+//   }
+// }
+
+// can we unify all of the file openers? probably not the alias file but i feel like the alpha and grand can be
+// but it's a lot of arguments 
+void GrandCorrelator::OpenFile(TFile *ofile, const std::string& prefix, const std::string& fileBase, const std::string& fileSuffix, const std::string& filePath, const std::string& fileDescription)
 {
-  // Create old-style blueR ROOT file
-  std::string name = prefix + fAlphaOutputFileBase + run_label.Data() + fAlphaOutputFileSuff;
-  std::string path = fAlphaOutputPath + "/";
+  std::string name = prefix + fileBase + run_label.Data() + fileSuffix;
+  std::string path = filePath + "/";
   std::string file = path + name;
-  fAlphaOutputFile = new TFile(TString(file), "RECREATE", "correlation coefficients");
-  if (! fAlphaOutputFile->IsWritable()) {
+  ofile = new TFile(TString(file), "RECREATE", fileDescription.c_str());
+  if (! ofile->IsWritable()) {
     QwError << "GrandCorrelator could not create output file " << file << QwLog::endl;
-    delete fAlphaOutputFile;
-    fAlphaOutputFile = 0;
+    delete ofile;
+    ofile = 0;
+  }
+}
+
+void GrandCorrelator::CloseFile(TFile *file)
+{
+  // Close slopes output file
+  if (file) {
+    file->cd();
+    file->Write();
+    file->Close();
   }
 }
 
@@ -693,14 +727,16 @@ void GrandCorrelator::OpenAliasFile(const std::string& prefix)
   }
 }
 
-void GrandCorrelator::CloseAlphaFile()
-{
-  // Close slopes output file
-  if (fAlphaOutputFile) {
-    fAlphaOutputFile->Write();
-    fAlphaOutputFile->Close();
-  }
-}
+// void GrandCorrelator::CloseAlphaFile()
+// {
+//   // Close slopes output file
+//   if (fAlphaOutputFile) {
+//     fAlphaOutputFile->Write();
+//     fAlphaOutputFile->Close();
+//   }
+// }
+
+
 
 void GrandCorrelator::CloseAliasFile()
 {
@@ -759,6 +795,10 @@ GrandCorrelator::GrandCorrelator(const GrandCorrelator& source)
   fAlphaOutputFileSuff(source.fAlphaOutputFileSuff),
   fAlphaOutputPath(source.fAlphaOutputPath),
   fAlphaOutputFile(nullptr),
+  fGrandOutputFileBase(source.fGrandOutputFileBase),
+  fGrandOutputFileSuff(source.fGrandOutputFileSuff),
+  fGrandOutputPath(source.fGrandOutputPath),
+  fGrandOutputFile(nullptr),
   fTree(nullptr),
   fAliasOutputFileBase(source.fAliasOutputFileBase),
   fAliasOutputFileSuff(source.fAliasOutputFileSuff),
@@ -1212,7 +1252,7 @@ void GrandCorrelator::printSummaryMeansWithUncCorrected() const
     QwMessage << "Y" << i << ":  " << mMYp(i) << " +- " << mSYp(i) << QwLog::endl;
   }
   QwMessage << QwLog::endl;
-}
+} 
 
 //==========================================================
 //==========================================================
@@ -1266,7 +1306,6 @@ for(int i = 0; i < fAllVar.size(); ++i){
         }
     }
 }
-
 
 //==========================================================
 //Solve step 2
