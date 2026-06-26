@@ -94,15 +94,12 @@ class GrandCorrelator : public VQwDataHandler, public MQwDataHandlerCloneable<Gr
   std::string fGrandOutputPath;
   TFile* fGrandOutputFile;
 
-  //void OpenAlphaFile(const std::string& prefix);
-  void OpenFile(TFile *file, const std::string& prefix, const std::string& fileBase, const std::string& fileSuffix, const std::string& filePath, const std::string& fileDescription);
-  void WriteAlphaFile();
-  //void CloseAlphaFile();
-  void CloseFile(TFile *file);
-
+  void OpenAlphaFile(const std::string& prefix);
   void OpenGrandFile(const std::string& prefix);
+  void WriteAlphaFile();
+  void CloseAlphaFile();
+  void CloseFile(TFile *file);
   void WriteGrandFile();
-  void CloseGrandFile();
 
   TTree* fTree;
 

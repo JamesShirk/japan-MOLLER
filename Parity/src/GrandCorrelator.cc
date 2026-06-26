@@ -59,8 +59,9 @@ GrandCorrelator::GrandCorrelator(const TString& name)
 GrandCorrelator::~GrandCorrelator()
 {
   // Close alpha and alias file
+  //CloseFile(fGrandOutputFile);
   CloseFile(fAlphaOutputFile);
-  CloseFile(fGrandOutputFile);
+  //CloseAlphaFile();
   CloseAliasFile();
 }
 
@@ -248,6 +249,7 @@ void GrandCorrelator::CalcCorrelations()
   else QwWarning << "No tree" << QwLog::endl;
 
   // Write alpha and alias file
+  WriteGrandFile();
   WriteAlphaFile();
   WriteAliasFile();
 }
@@ -422,9 +424,11 @@ void GrandCorrelator::ConstructTreeBranches(
   }
 
   // Create alpha, grand, and alias files before trying to create the tree
-  OpenFile(fAlphaOutputFile, treeprefix, fAlphaOutputFileBase, fAlphaOutputFileSuff, fAlphaOutputPath, "correlation coefficients");
-  OpenFile(fGrandOutputFile, treeprefix, fGrandOutputFileBase, fGrandOutputFileSuff, fGrandOutputPath, "grand matrix output");
+  //OpenFile(fAlphaOutputFile, treeprefix, fAlphaOutputFileBase, fAlphaOutputFileSuff, fAlphaOutputPath, "correlation coefficients");
+  //OpenFile(fGrandOutputFile, treeprefix, fGrandOutputFileBase, fGrandOutputFileSuff, fGrandOutputPath, "grand matrix output");
   OpenAliasFile(treeprefix);
+  OpenAlphaFile(treeprefix);
+  OpenGrandFile(treeprefix);
 
   // Construct tree name and create new tree
   const std::string name = treeprefix + fTreeName;
@@ -491,6 +495,15 @@ void GrandCorrelator::ConstructTreeBranches(
   branchv(fTree,this->mSY,  "dMY");  // Uncorrected mean error
   branchv(fTree,this->mSYp, "dMYp"); // Corrected mean error
 
+  //mNij, mSij, mMij, mCij, mVij, mRij, sigma_ij, sigma_ji
+  branchm(fTree,this->mNij, "Nij");
+  branchm(fTree,this->mSij, "Sij");
+  branchm(fTree,this->mMij, "Mij");
+  branchm(fTree,this->mCij, "Cij");
+  branchm(fTree,this->mVij, "Vij");
+  branchm(fTree,this->mRij, "Rij");
+  branchm(fTree,this->sigma_ij, "sigma_ij");
+  branchm(fTree,this->sigma_ji, "sigma_ji");
 }
 
 /// \brief Construct the histograms in a folder with a prefix
@@ -668,34 +681,51 @@ void GrandCorrelator::WriteAlphaFile()
 
   this->Axy.Write("A_xy");
   this->Ayx.Write("A_yx");
+
 }
 
-// void GrandCorrelator::OpenAlphaFile(const std::string& prefix)
-// {
-//   // Create old-style blueR ROOT file
-//   std::string name = prefix + fAlphaOutputFileBase + run_label.Data() + fAlphaOutputFileSuff;
-//   std::string path = fAlphaOutputPath + "/";
-//   std::string file = path + name;
-//   fAlphaOutputFile = new TFile(TString(file), "RECREATE", "correlation coefficients");
-//   if (! fAlphaOutputFile->IsWritable()) {
-//     QwError << "GrandCorrelator could not create output file " << file << QwLog::endl;
-//     delete fAlphaOutputFile;
-//     fAlphaOutputFile = 0;
-//   }
-// }
-
-// can we unify all of the file openers? probably not the alias file but i feel like the alpha and grand can be
-// but it's a lot of arguments 
-void GrandCorrelator::OpenFile(TFile *ofile, const std::string& prefix, const std::string& fileBase, const std::string& fileSuffix, const std::string& filePath, const std::string& fileDescription)
+void GrandCorrelator::WriteGrandFile()
 {
-  std::string name = prefix + fileBase + run_label.Data() + fileSuffix;
-  std::string path = filePath + "/";
+  //mNij, mSij, mMij, mCij, mVij, mRij, sigma_ij, sigma_ji
+
+  if (fGrandOutputFile) fGrandOutputFile->cd();
+  
+  this->mNij.Write("N_ij");
+  this->mSij.Write("S_ij");
+  this->mMij.Write("M_ij");
+  this->mCij.Write("C_ij");
+  this->mVij.Write("V_ij");
+  this->mRij.Write("R_ij");
+  this->sigma_ij.Write("sigma_ij");
+  this->sigma_ji.Write("sigma_ji");
+
+}
+
+void GrandCorrelator::OpenAlphaFile(const std::string& prefix)
+{
+  // Create old-style blueR ROOT file
+  std::string name = prefix + fAlphaOutputFileBase + run_label.Data() + fAlphaOutputFileSuff;
+  std::string path = fAlphaOutputPath + "/";
   std::string file = path + name;
-  ofile = new TFile(TString(file), "RECREATE", fileDescription.c_str());
-  if (! ofile->IsWritable()) {
+  fAlphaOutputFile = new TFile(TString(file), "RECREATE", "correlation coefficients");
+  if (! fAlphaOutputFile->IsWritable()) {
     QwError << "GrandCorrelator could not create output file " << file << QwLog::endl;
-    delete ofile;
-    ofile = 0;
+    delete fAlphaOutputFile;
+    fAlphaOutputFile = 0;
+  }
+}
+
+void GrandCorrelator::OpenGrandFile(const std::string& prefix)
+{
+  // Create old-style blueR ROOT file
+  std::string name = prefix + fGrandOutputFileBase + run_label.Data() + fAlphaOutputFileSuff;
+  std::string path = fGrandOutputPath + "/";
+  std::string file = path + name;
+  fGrandOutputFile = new TFile(TString(file), "RECREATE", "grand matrices");
+  if (! fGrandOutputFile->IsWritable()) {
+    QwError << "GrandCorrelator could not create output file " << file << QwLog::endl;
+    delete fGrandOutputFile;
+    fGrandOutputFile = 0;
   }
 }
 
@@ -706,6 +736,15 @@ void GrandCorrelator::CloseFile(TFile *file)
     file->cd();
     file->Write();
     file->Close();
+  }
+}
+
+void GrandCorrelator::CloseAlphaFile()
+{
+  // Close slopes output file
+  if (fAlphaOutputFile) {
+    fAlphaOutputFile->Write();
+    fAlphaOutputFile->Close();
   }
 }
 
@@ -1306,6 +1345,10 @@ for(int i = 0; i < fAllVar.size(); ++i){
         }
     }
 }
+// Matrices we need at this point: mNij, mSij, mMij, mCij, mVij, mRij, sigma_ij, sigma_ji
+
+
+
 
 //==========================================================
 //Solve step 2
