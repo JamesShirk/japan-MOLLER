@@ -59,7 +59,7 @@ GrandCorrelator::GrandCorrelator(const TString& name)
 GrandCorrelator::~GrandCorrelator()
 {
   // Close alpha and alias file
-  //CloseFile(fGrandOutputFile);
+  CloseFile(fGrandOutputFile);
   CloseFile(fAlphaOutputFile);
   //CloseAlphaFile();
   CloseAliasFile();
@@ -399,6 +399,8 @@ Int_t GrandCorrelator::ConnectChannels(QwSubsystemArrayParity& asym, QwSubsystem
   fAllVar.insert(fAllVar.end(), fDependentVar.begin(), fDependentVar.end());
   fAllValues = fIndependentValues;
   fAllValues.insert(fAllValues.end(), fDependentValues.begin(), fDependentValues.end());
+  fAllFull = fIndependentFull;
+  fAllFull.insert(fAllFull.end(), fDependentFull.begin(), fDependentFull.end());
   fAllGood.resize(fAllValues.size(), true);
 
 
@@ -646,7 +648,7 @@ void GrandCorrelator::WriteAlphaFile()
   hiv.Write();
 
   //... DVs
-  TH1D hdv("DVname","names of IVs",nY,-0.5,nY-0.5);
+  TH1D hdv("DVname","names of DVs",nY,-0.5,nY-0.5);
   for (int i=0;i<nY;i++) hdv.Fill(fDependentFull[i].c_str(),i);
   hdv.Write();
 
@@ -698,6 +700,10 @@ void GrandCorrelator::WriteGrandFile()
   this->mRij.Write("R_ij");
   this->sigma_ij.Write("sigma_ij");
   this->sigma_ji.Write("sigma_ji");
+
+  TH1D hv("names","names of variables",fAllFull.size(),-0.5,fAllFull.size()-0.5);
+  for (int i=0;i<fAllFull.size();i++) hv.Fill(fAllFull[i].c_str(),i);
+  hv.Write();
 
 }
 

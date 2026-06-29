@@ -177,6 +177,7 @@ class GrandCorrelator : public VQwDataHandler, public MQwDataHandlerCloneable<Gr
   TMatrixD mSFULL_clean;
   std::vector<const VQwHardwareChannel*> fAllVar; // stores the channels (pointers)
   std::vector<double> fAllValues;                 // stores the current event values
+  std::vector< std::string > fAllFull;            // stores the full names of the channels
   std::vector<bool> fAllGood;
   std::vector<std::string> fAllName;
 //========================================================
