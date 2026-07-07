@@ -642,15 +642,19 @@ void GrandCorrelator::WriteAlphaFile()
   Mstat(0,0)=this->getUsedEve();
   Mstat.Write("MyStat");
 
-  //... IVs
-  TH1D hiv("IVname","names of IVs",nP,-0.5,nP-0.5);
-  for (int i=0;i<nP;i++) hiv.Fill(fIndependentFull[i].c_str(),i);
-  hiv.Write();
+  // //... IVs
+  // TH1D hiv("IVname","names of IVs",nP,-0.5,nP-0.5);
+  // for (int i=0;i<nP;i++) hiv.Fill(fIndependentFull[i].c_str(),i);
+  // hiv.Write();
 
-  //... DVs
-  TH1D hdv("DVname","names of DVs",nY,-0.5,nY-0.5);
-  for (int i=0;i<nY;i++) hdv.Fill(fDependentFull[i].c_str(),i);
-  hdv.Write();
+  fGrandOutputFile->WriteObjectAny(&this->fIndependentFull, "vector<string>", "names of IVs");
+
+  // //... DVs
+  // TH1D hdv("DVname","names of DVs",nY,-0.5,nY-0.5);
+  // for (int i=0;i<nY;i++) hdv.Fill(fDependentFull[i].c_str(),i);
+  // hdv.Write();
+
+  fGrandOutputFile->WriteObjectAny(&this->fDependentFull, "vector<string>", "names of DVs");
 
   // sigmas
   this->mSP.Write("IV_sigma");
@@ -701,9 +705,11 @@ void GrandCorrelator::WriteGrandFile()
   this->sigma_ij.Write("sigma_ij");
   this->sigma_ji.Write("sigma_ji");
 
-  TH1D hv("names","names of variables",fAllFull.size(),-0.5,fAllFull.size()-0.5);
-  for (int i=0;i<fAllFull.size();i++) hv.Fill(fAllFull[i].c_str(),i);
-  hv.Write();
+  // TH1D hv("names","names of variables",fAllFull.size(),-0.5,fAllFull.size()-0.5);
+  // for (int i=0;i<fAllFull.size();i++) hv.Fill(fAllFull[i].c_str(),i);
+  // hv.Write();
+
+  fGrandOutputFile->WriteObjectAny(&this->fAllFull, "vector<string>", "name_vector");
 
 }
 
@@ -724,7 +730,7 @@ void GrandCorrelator::OpenAlphaFile(const std::string& prefix)
 void GrandCorrelator::OpenGrandFile(const std::string& prefix)
 {
   // Create old-style blueR ROOT file
-  std::string name = prefix + fGrandOutputFileBase + run_label.Data() + fAlphaOutputFileSuff;
+  std::string name = prefix + fGrandOutputFileBase + run_label.Data() + fGrandOutputFileSuff;
   std::string path = fGrandOutputPath + "/";
   std::string file = path + name;
   fGrandOutputFile = new TFile(TString(file), "RECREATE", "grand matrices");
@@ -830,10 +836,7 @@ GrandCorrelator::GrandCorrelator()
 //=================================================
 //=================================================
 GrandCorrelator::GrandCorrelator(const GrandCorrelator& source)
-: nP(source.nP),nY(source.nY),
-  fErrorFlag(-1),
-  fGoodEventNumber(0),
-  VQwDataHandler(source),
+: VQwDataHandler(source),
   fBlock(source.fBlock),
   fDisableHistos(source.fDisableHistos),
   fAlphaOutputFileBase(source.fAlphaOutputFileBase),
@@ -848,7 +851,12 @@ GrandCorrelator::GrandCorrelator(const GrandCorrelator& source)
   fAliasOutputFileBase(source.fAliasOutputFileBase),
   fAliasOutputFileSuff(source.fAliasOutputFileSuff),
   fAliasOutputPath(source.fAliasOutputPath),
-  fCycleCounter(source.fCycleCounter)
+  fNameNoSpaces(source.fNameNoSpaces),
+  nP(source.nP),
+  nY(source.nY),
+  fCycleCounter(source.fCycleCounter),
+  fErrorFlag(-1),
+  fGoodEventNumber(0)
 {
   QwMessage << fGoodEventNumber << QwLog::endl;
 
