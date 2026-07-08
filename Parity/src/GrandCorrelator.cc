@@ -649,14 +649,14 @@ void GrandCorrelator::WriteAlphaFile()
   // for (int i=0;i<nP;i++) hiv.Fill(fIndependentFull[i].c_str(),i);
   // hiv.Write();
 
-  fAlphaOutputFile->WriteObjectAny(&this->fIndependentFull, "vector<string>", "names of IVs");
+  fAlphaOutputFile->WriteObjectAny(&this->fIndependentName, "vector<string>", "names of IVs");
 
   // //... DVs
   // TH1D hdv("DVname","names of DVs",nY,-0.5,nY-0.5);
   // for (int i=0;i<nY;i++) hdv.Fill(fDependentFull[i].c_str(),i);
   // hdv.Write();
 
-  fAlphaOutputFile->WriteObjectAny(&this->fDependentFull, "vector<string>", "names of DVs");
+  fAlphaOutputFile->WriteObjectAny(&this->fDependentName, "vector<string>", "names of DVs");
 
   // sigmas
   this->mSP.Write("IV_sigma");
