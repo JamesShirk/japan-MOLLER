@@ -401,6 +401,8 @@ Int_t GrandCorrelator::ConnectChannels(QwSubsystemArrayParity& asym, QwSubsystem
   fAllValues.insert(fAllValues.end(), fDependentValues.begin(), fDependentValues.end());
   fAllFull = fIndependentFull;
   fAllFull.insert(fAllFull.end(), fDependentFull.begin(), fDependentFull.end());
+  fAllName = fIndependentName;
+  fAllName.insert(fAllName.end(), fDependentName.begin(), fDependentName.end());
   fAllGood.resize(fAllValues.size(), true);
 
 
@@ -647,14 +649,14 @@ void GrandCorrelator::WriteAlphaFile()
   // for (int i=0;i<nP;i++) hiv.Fill(fIndependentFull[i].c_str(),i);
   // hiv.Write();
 
-  fGrandOutputFile->WriteObjectAny(&this->fIndependentFull, "vector<string>", "names of IVs");
+  fAlphaOutputFile->WriteObjectAny(&this->fIndependentFull, "vector<string>", "names of IVs");
 
   // //... DVs
   // TH1D hdv("DVname","names of DVs",nY,-0.5,nY-0.5);
   // for (int i=0;i<nY;i++) hdv.Fill(fDependentFull[i].c_str(),i);
   // hdv.Write();
 
-  fGrandOutputFile->WriteObjectAny(&this->fDependentFull, "vector<string>", "names of DVs");
+  fAlphaOutputFile->WriteObjectAny(&this->fDependentFull, "vector<string>", "names of DVs");
 
   // sigmas
   this->mSP.Write("IV_sigma");
@@ -705,11 +707,7 @@ void GrandCorrelator::WriteGrandFile()
   this->sigma_ij.Write("sigma_ij");
   this->sigma_ji.Write("sigma_ji");
 
-  // TH1D hv("names","names of variables",fAllFull.size(),-0.5,fAllFull.size()-0.5);
-  // for (int i=0;i<fAllFull.size();i++) hv.Fill(fAllFull[i].c_str(),i);
-  // hv.Write();
-
-  fGrandOutputFile->WriteObjectAny(&this->fAllFull, "vector<string>", "name_vector");
+  fGrandOutputFile->WriteObjectAny(&this->fAllName, "vector<string>", "names");
 
 }
 
