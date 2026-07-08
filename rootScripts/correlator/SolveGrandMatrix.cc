@@ -1,13 +1,17 @@
 #include "SolveGrandMatrix.h"
 
 void SolveGrandMatrix(char *fname, int nIndep){
+
     // open new tfile named grandFile and read in the matrices
     int nDets = readFile(fname, nIndep);
+
+    // check if the file actually opened
     if (!grandFile || grandFile->IsZombie()) {
         std::cout << "Could not open input file: " << fname << std::endl;
         return;
     }
 
+    // cant initialize matrices until we know how many dets, which we get from size of the grand matrices
     initMatices(nIndep, nDets - nIndep);
     solve(nIndep, nDets - nIndep);
 
@@ -34,6 +38,8 @@ int readFile(char *fname, int nIndep){
     TMatrixD _sigma_ij = *grandFile->Get<TMatrixD>("sigma_ij");
     TMatrixD _sigma_ji = *grandFile->Get<TMatrixD>("sigma_ji");
 
+    // we dont know how big the matrices are until we read them
+    // moot if we declare the variable here too but then we couldnt use them in sovle()
     mNij.ResizeTo(_mNij); mNij = _mNij;
     mSij.ResizeTo(_mSij); mSij = _mSij;
     mMij.ResizeTo(_mMij); mMij = _mMij;
@@ -90,8 +96,6 @@ void WriteOutput(int nIndep){
     mSY.Write("DV_sigma");
     mSYp.Write("DV_sigma_prime");
 
-
-
     // raw covariances
     mVPP.Write("IV_IV_rawVariance");
     mVPY.Write("IV_DV_rawVariance");
@@ -125,6 +129,8 @@ void WriteOutput(int nIndep){
     ofile->Close();
 }
 
+// tmatrices and tvectors default initialize to 0x0 (or length 0 given tvectors)
+// if we want them to simultanously be global and be able to assign them later we have to initialize them to the right size
 void initMatices(int nP, int nY){
   mMP.ResizeTo(nP);
   mMY.ResizeTo(nY);
@@ -171,19 +177,20 @@ void solve(int nP, int nY){
     TMatrixD mSFULL_clean; mSFULL_clean.ResizeTo(mNij);
 
 
-    mVPY.ResizeTo(nP, nY); mVPY = mCij.GetSub(0,nP-1,nP,nP+nY-1);
-    mVPP.ResizeTo(nP, nP); mVPP = mCij.GetSub(0,nP-1,0,nP-1);
-    mVYY.ResizeTo(nY, nY); mVYY = mCij.GetSub(nP,nP+nY-1,nP,nP+nY-1);
+    // still just assume the independent variables are first
+    mVPY = mCij.GetSub(0,nP-1,nP,nP+nY-1);
+    mVPP = mCij.GetSub(0,nP-1,0,nP-1);
+    mVYY = mCij.GetSub(nP,nP+nY-1,nP,nP+nY-1);
 
 
-    mRPY.ResizeTo(nP, nY); mRPY = mRij.GetSub(0,nP-1,nP,nP+nY-1);
-    mRPP.ResizeTo(nP, nP); mRPP = mRij.GetSub(0,nP-1,0,nP-1);
-    mRYY.ResizeTo(nY, nY); mRYY = mRij.GetSub(nP,nP+nY-1,nP,nP+nY-1);
+    mRPY = mRij.GetSub(0,nP-1,nP,nP+nY-1);
+    mRPP = mRij.GetSub(0,nP-1,0,nP-1);
+    mRYY = mRij.GetSub(nP,nP+nY-1,nP,nP+nY-1);
 
 
-    mSPY.ResizeTo(nP, nY); mSPY = mVij.GetSub(0,nP-1,nP,nP+nY-1);
-    mSPP.ResizeTo(nP, nP); mSPP = mVij.GetSub(0,nP-1,0,nP-1);
-    mSYY.ResizeTo(nY, nY); mSYY = mVij.GetSub(nP,nP+nY-1,nP,nP+nY-1);
+    mSPY = mVij.GetSub(0,nP-1,nP,nP+nY-1);
+    mSPP = mVij.GetSub(0,nP-1,0,nP-1);
+    mSYY = mVij.GetSub(nP,nP+nY-1,nP,nP+nY-1);
 
     // off-diagonal raw covariance
     
