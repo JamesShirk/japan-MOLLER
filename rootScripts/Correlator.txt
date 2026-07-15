@@ -225,5 +225,5 @@ dv asym_tq28_r3
 dv asym_tq28_r4
 dv asym_tq28_r5l
 dv asym_tq28_r5c
-iv asym_tq28_r5r
+dv asym_tq28_r5r
 dv asym_tq28_r6
