@@ -14,12 +14,21 @@
 #include "TVectorD.h"
 #include "TMatrixD.h"
 
-void SolveGrandMatrix(char *fname, int nIndep);
-int readFile(char *fname, int nIndep);
-void WriteOutput(int nIndep);
-void solve(int nP, int nY);
-void openOutputFile(std::string path, std::string fname = "regression_output.root");
+void SolveGrandMatrix(char *fname, char *configFile);
+
+int readFile(char *fname);
+void openOutputFile(std::string path, std::string fname);
 void initMatices(int nP, int nY);
+void WriteOutput(int nIndep);
+
+int getDVIV(char *fname);
+int insertIV(std::vector<int> indep_indices);
+
+void insertRowCol(int rc1, int rc2);
+void SwitchRowCol (int rc1, int rc2, TMatrixD A);
+void SwitchMatrices(int rc1, int rc2);
+
+void solve(int nP, int nY);
 
 TFile *grandFile;
 
@@ -58,6 +67,6 @@ TVectorD mSYp;
 TVectorD mMP, mMY, mMYp;
 TMatrixD Axy, Ayx, dAxy, dAyx;
 
-std::vector<std::string> *allnames;
+std::vector<std::string> allnames;
 
 TFile *ofile;
