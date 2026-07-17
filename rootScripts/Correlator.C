@@ -40,6 +40,18 @@ void initialize() {
     }
 }
 
+//void SwitchMatrices(int rc1, int rc2) {
+//    SwitchRowCol(rc1, rc2, &mCij);
+//    SwitchRowCol(rc1, rc2, &mRij);
+//    SwitchRowCol(rc1, rc2, &mVij);
+//    SwitchRowCol(rc1, rc2, &mNij);
+//    SwitchRowCol(rc1, rc2, &mMij);
+//    SwitchRowCol(rc1, rc2, &mSij);
+//    SwitchRowCol(rc1, rc2, &sigma_ij);
+//    SwitchRowCol(rc1, rc2, &sigma_ji);
+//    std::iter_swap(allnames.begin() + rc1, allnames.begin() + rc2);
+//}
+
 // This switches one row/column with another and writes it to the gDirectory file
 void SwitchRowCol (int rc1, int rc2) {
     TMatrixT<double>* mCij = (TMatrixT<double>*)gDirectory->Get("C_ij_temp");
@@ -79,6 +91,17 @@ void SwitchRowCol (int rc1, int rc2) {
     mCij->Write("C_ij_temp", TObject::kOverwrite);
     mRij->Write("R_ij_temp", TObject::kOverwrite);
     mVij->Write("V_ij_temp", TObject::kOverwrite);
+}
+
+void insertRowCol(int rc1, int rc2) {
+    if (rc1 > rc2) {
+        int temp = rc1;
+        rc1 = rc2;
+        rc2 = temp;
+    }
+    for (int i = rc2; i > rc1; i--) {
+        SwitchRowCol(i - 1, i);
+    }
 }
 
 void remove() {
@@ -274,7 +297,7 @@ void ChangeIVDV () {
         std::string tempName = CombinedName[rc2];
         CombinedName[rc2] = CombinedName[rc1];
         CombinedName[rc1] = tempName;
-        SwitchRowCol(rc1, rc2);
+        insertRowCol(rc1, rc2);
         inst.push_back(rc1); inst.push_back(rc2);
     }
 }
