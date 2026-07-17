@@ -5,11 +5,46 @@
 // ((TMatrixT<double>*)gDirectory->Get("C_ij"))->Print();
 
 
+// vector I define to help "remember" the actions taken in one ChangeIVDV run so that it can automatically reset when you run the program again
+// if a better method of this exists please let me know
+std::vector<int> inst;
+
+
+void initialize() {
+    if (!(gDirectory->Get("C_ij_temp") != nullptr)) {
+        TMatrixT<double>* mCij = (TMatrixT<double>*)gDirectory->Get("C_ij");
+        TMatrixT<double> mCijTemp(*mCij);
+        mCijTemp.Write("C_ij_temp", TObject::kOverwrite);
+        if (!(gDirectory->Get("C_ij_original") != nullptr)) {
+            mCijTemp.Write("C_ij_original", TObject::kOverwrite);
+        }
+        std::cout << "Made the temp and backup Cij Matrix" << std::endl;
+    }
+    if (!(gDirectory->Get("R_ij_temp") != nullptr)) {
+        TMatrixT<double>* mRij = (TMatrixT<double>*)gDirectory->Get("R_ij");
+        TMatrixT<double> mRijTemp(*mRij);
+        mRijTemp.Write("R_ij_temp", TObject::kOverwrite);
+        if (!(gDirectory->Get("V_ij_original") != nullptr)) {
+            mRijTemp.Write("V_ij_original", TObject::kOverwrite);
+        }
+        std::cout << "Made the temp and backup Rij Matrix" << std::endl;
+    }
+    if (!(gDirectory->Get("V_ij_temp") != nullptr)) {
+        TMatrixT<double>* mVij = (TMatrixT<double>*)gDirectory->Get("V_ij");
+        TMatrixT<double> mVijTemp(*mVij);
+        mVijTemp.Write("V_ij_temp", TObject::kOverwrite);
+        if (!(gDirectory->Get("R_ij_original") != nullptr)) {
+            mVijTemp.Write("R_ij_original", TObject::kOverwrite);
+        }
+        std::cout << "Made the temp and backup Vij Matrix" << std::endl;
+    }
+}
+
 // This switches one row/column with another and writes it to the gDirectory file
 void SwitchRowCol (int rc1, int rc2) {
-    TMatrixT<double>* mCij = (TMatrixT<double>*)gDirectory->Get("C_ij");
-    TMatrixT<double>* mRij = (TMatrixT<double>*)gDirectory->Get("R_ij");
-    TMatrixT<double>* mVij = (TMatrixT<double>*)gDirectory->Get("V_ij");
+    TMatrixT<double>* mCij = (TMatrixT<double>*)gDirectory->Get("C_ij_temp");
+    TMatrixT<double>* mRij = (TMatrixT<double>*)gDirectory->Get("R_ij_temp");
+    TMatrixT<double>* mVij = (TMatrixT<double>*)gDirectory->Get("V_ij_temp");
     std::cout << rc1 << " " << rc2 << std::endl;
     for (int col = 0; col < mCij->GetNcols(); col++) {
         double temp = (*mCij)(rc1, col);
@@ -41,18 +76,51 @@ void SwitchRowCol (int rc1, int rc2) {
         (*mVij)(row, rc1) = (*mVij)(row, rc2);
         (*mVij)(row, rc2) = temp;
     }
+    mCij->Write("C_ij_temp", TObject::kOverwrite);
+    mRij->Write("R_ij_temp", TObject::kOverwrite);
+    mVij->Write("V_ij_temp", TObject::kOverwrite);
+}
+
+void remove() {
+    gDirectory->Delete("C_ij_temp;*");
+    gDirectory->Delete("R_ij_temp;*");
+    gDirectory->Delete("V_ij_temp;*");
+    inst.clear();
+    std::cout << "Matricies cleared " << std::endl;
+}
+
+void restart() {
+    TMatrixT<double>* mCij = (TMatrixT<double>*)gDirectory->Get("C_ij_original");
+    TMatrixT<double>* mRij = (TMatrixT<double>*)gDirectory->Get("R_ij_original");
+    TMatrixT<double>* mVij = (TMatrixT<double>*)gDirectory->Get("V_ij_original");
+    if (!mCij||!mVij||!mRij) {
+        std::cout << "One of the backup matricies is missing" << std::endl;
+        return;
+    }
+    mCij->Write("C_ij", TObject::kOverwrite);
+    mRij->Write("R_ij", TObject::kOverwrite);
+    mVij->Write("V_ij", TObject::kOverwrite);
+    std::cout << "reverted matricies back to original state" << std::endl;
+}
+
+void commit() {
+    TMatrixT<double>* mCij = (TMatrixT<double>*)gDirectory->Get("C_ij_temp");
+    TMatrixT<double>* mRij = (TMatrixT<double>*)gDirectory->Get("R_ij_temp");
+    TMatrixT<double>* mVij = (TMatrixT<double>*)gDirectory->Get("V_ij_temp");
+    if (!mCij||!mVij||!mRij) {
+        std::cout << "One of the temp matricies is missing" << std::endl;
+        return;
+    }
     mCij->Write("C_ij", TObject::kOverwrite);
     mRij->Write("R_ij", TObject::kOverwrite);
     mVij->Write("V_ij", TObject::kOverwrite);
 }
 
-// vector I define to help "remember" the actions taken in one ChangeIVDV run so that it can automatically reset when you run the program again
-// if a better method of this exists please let me know
-std::vector<int> inst;
-
 // what you actually run to change the rows and columns
 // the input file needs to have the same format as the matricies with iv and dv in from and you simply change some from iv to dv or vice versa to make changes to the variables
 void ChangeIVDV () {
+
+    initialize();
 
 // grabs the raw names and categorizes them
     std::vector<std::string> *depNames = (std::vector<std::string>*)gDirectory->Get("Dependent_Names");
@@ -164,12 +232,11 @@ void ChangeIVDV () {
     
     //defines # of dependent and independent variables I hope that this can change nY and nP in the actual solve funtion to define the submatrix cuts
     int nP = IndepVar.size();
-    int nY = InputType.size() - IndepVar.size();
+    int nY = InputType.size() - IndepVar.size() - RemoveVar.size();
 
     //Simple output to make sure that the # of dependent and independent variables are what we expect
     std::cout << "Original dep and indep sizes are " << indepNames->size() << " " << depNames->size() << std::endl;
     std::cout << "New dep and indep sizes are " << nP << " " << nY << std::endl;
-    std::cout << "-------------------------------------------------------------" << std::endl;
 
     // A simple sorting function that puts any variable marked with iv in the first nP rows and columns
     // It looks for the iv with the smallest position in the vector (example 0 would be the lowest) and sorts it into the 0th row/columns
